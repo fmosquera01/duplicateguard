@@ -5,7 +5,8 @@ declare(strict_types=1);
  * DuplicateGuard ticket validation.
  *
  * Blocks a ticket when another non-deleted ticket has the same title and is
- * not closed. The validation is server-side and applies to all ticket origins.
+ * not closed. The validation is server-side and applies to all ticket origins
+ * that use GLPI's standard Ticket add/update lifecycle.
  */
 class PluginDuplicateguardTicketGuard
 {
@@ -19,6 +20,11 @@ class PluginDuplicateguardTicketGuard
         $title = self::normalizeTitle($input['name'] ?? '');
 
         if ($title === '') {
+            return;
+        }
+
+        $newStatus = isset($input['status']) ? (int) $input['status'] : CommonITILObject::INCOMING;
+        if ($newStatus === CommonITILObject::CLOSED) {
             return;
         }
 
@@ -36,18 +42,19 @@ class PluginDuplicateguardTicketGuard
         }
 
         $input = is_array($item->input) ? $item->input : [];
-
-        if (!array_key_exists('name', $input)) {
-            return;
-        }
-
-        $title = self::normalizeTitle($input['name']);
-
-        if ($title === '') {
-            return;
-        }
-
         $currentId = (int) ($item->fields['id'] ?? $input['id'] ?? 0);
+
+        // Evaluate the effective title and status, including status-only
+        // updates (for example, reopening a previously closed ticket).
+        $title = self::normalizeTitle($input['name'] ?? $item->fields['name'] ?? '');
+        $status = isset($input['status'])
+            ? (int) $input['status']
+            : (int) ($item->fields['status'] ?? CommonITILObject::INCOMING);
+
+        if ($title === '' || $status === CommonITILObject::CLOSED) {
+            return;
+        }
+
         $duplicate = self::findOpenDuplicate($title, $currentId);
 
         if ($duplicate !== null) {
@@ -61,6 +68,8 @@ class PluginDuplicateguardTicketGuard
             return '';
         }
 
+        // Ignore accidental whitespace at the beginning/end. Internal
+        // characters and spacing remain meaningful.
         return trim((string) $title);
     }
 
@@ -73,9 +82,9 @@ class PluginDuplicateguardTicketGuard
 
         $iterator = $DB->request([
             'SELECT' => ['id', 'name', 'status'],
-            'FROM' => Ticket::getTable(),
-            'WHERE' => [
-                'name' => $title,
+            'FROM'   => Ticket::getTable(),
+            'WHERE'  => [
+                'name'       => $title,
                 'is_deleted' => 0,
             ],
             'ORDER' => ['id ASC'],
@@ -90,8 +99,8 @@ class PluginDuplicateguardTicketGuard
 
             if ((int) ($row['status'] ?? 0) !== CommonITILObject::CLOSED) {
                 return [
-                    'id' => $ticketId,
-                    'name' => (string) ($row['name'] ?? ''),
+                    'id'     => $ticketId,
+                    'name'   => (string) ($row['name'] ?? ''),
                     'status' => (int) ($row['status'] ?? 0),
                 ];
             }
@@ -112,6 +121,7 @@ class PluginDuplicateguardTicketGuard
         );
 
         Session::addMessageAfterRedirect($message, false, ERROR);
+        // GLPI cancels a pre-item operation when input is set to false.
         $item->input = false;
     }
 }
