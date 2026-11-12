@@ -79,7 +79,6 @@ class PluginDuplicateguardTicketGuard
                 'is_deleted' => 0,
             ],
             'ORDER' => ['id ASC'],
-            'LIMIT' => 100,
         ]);
 
         foreach ($iterator as $row) {
