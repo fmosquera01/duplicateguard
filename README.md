@@ -2,26 +2,27 @@
 
 Plugin independiente para GLPI 11 que evita tickets duplicados por título.
 
-## Comportamiento inicial
+## Comportamiento
 
 - Se ejecuta en el servidor antes de guardar un ticket.
-- Aplica a todos los tickets de GLPI, sin importar si se crean desde la interfaz, FormCreator, API u otra integración que utilice el flujo estándar de creación de GLPI.
+- Aplica a todos los tickets de GLPI, sin limitarse a FormCreator, al catálogo de reparaciones ni al plugin HH.
+- Funciona con la interfaz de GLPI y con los procesos que utilizan el ciclo estándar de Ticket::add() y Ticket::update().
 - No limita la validación por entidad, categoría, tipo de solicitud, solicitante ni activo relacionado.
 - Busca otro ticket no eliminado con el mismo título.
-- Bloquea la creación si encuentra un ticket cuyo estado no sea Cerrado. Un ticket Solucionado sigue bloqueando hasta que se cierre.
-- Muestra un mensaje con el número del ticket que impide la creación.
-- También valida los cambios de título al editar un ticket, para evitar que una edición introduzca un duplicado.
+- Bloquea la creación o edición si encuentra otro ticket cuyo estado no sea **Cerrado**. Un ticket **Solucionado** sigue bloqueando hasta que se cierre.
+- También impide reabrir un ticket si ya existe otro ticket activo con el mismo título.
+- Muestra un mensaje con el número del ticket que impide la operación.
 - Ignora el propio ticket durante una edición.
 
 ## Comparación de títulos
 
-Se eliminan espacios al inicio y al final del título enviado. La comparación del título existente utiliza la intercalación/collation configurada en la base de datos GLPI.
+Se eliminan espacios al inicio y al final del título. No se modifican los espacios internos. La comparación del título existente utiliza la intercalación/collation configurada en la base de datos GLPI; por tanto, la sensibilidad a mayúsculas/minúsculas depende de esa configuración.
 
 ## Instalación
 
-1. Copiar la carpeta duplicateguard en plugins/.
-2. Ir a Configuración > Plugins.
-3. Instalar y habilitar DuplicateGuard.
+1. Copiar la carpeta \`duplicateguard\` en \`plugins/\`.
+2. Ir a **Configuración > Plugins**.
+3. Instalar y habilitar **DuplicateGuard**.
 
 No crea tablas adicionales ni modifica los tickets existentes.
 
@@ -32,4 +33,4 @@ No crea tablas adicionales ni modifica los tickets existentes.
 
 ## Nota técnica
 
-La validación usa los hooks PRE_ITEM_ADD y PRE_ITEM_UPDATE de GLPI sobre Ticket, cancelando la operación cuando detecta un duplicado.
+La validación utiliza los hooks \`PRE_ITEM_ADD\` y \`PRE_ITEM_UPDATE\` de GLPI sobre \`Ticket\`. Cuando detecta un duplicado, cancela la operación en el servidor y muestra el aviso al usuario.
