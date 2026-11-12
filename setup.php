@@ -46,13 +46,3 @@ function plugin_duplicateguard_check_config(): bool
 {
     return true;
 }
-
-function plugin_duplicateguard_install(): bool
-{
-    return true;
-}
-
-function plugin_duplicateguard_uninstall(): bool
-{
-    return true;
-}
