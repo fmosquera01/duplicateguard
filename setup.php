@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use Glpi\Plugin\Hooks;
 
-define('PLUGIN_DUPLICATEGUARD_VERSION', '1.0.1');
+define('PLUGIN_DUPLICATEGUARD_VERSION', '1.0.2');
 
 require_once __DIR__ . '/src/TicketGuard.php';
 
